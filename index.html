@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Canvas Drawing App</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            background-color: #ffffff;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .toolbar {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background-color: #333;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .tool-button {
+            border: none;
+            background-color: #555;
+            color: #fff;
+            padding: 10px 15px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .tool-button:hover {
+            background-color: #777;
+        }
+        .tool-button.active, .tool-button:active {
+            background-color: #222;
+        }
+        .tool-button img {
+            height: 16px;
+            width: 16px;
+            vertical-align: middle;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            border: none;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .color-picker {
+            display: none;
+        }
+        #radiusValue {
+            margin-left: 8px;
+            font-weight: bold;
+        }
+        #clearCanvas img {
+            height: 20px;
+            width: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button id="pen" class="tool-button active">
+            <img src="https://cdn.icon-icons.com/icons2/2783/PNG/512/pen_edit_icon_177296.png" alt="Pen">
+        </button>
+        <button id="eraser" class="tool-button">
+            <img src="https://static.thenounproject.com/png/36184-200.png" alt="Eraser">
+        </button>
+        <button id="penRadius" class="tool-button">Pen Radius</button>
+        <button id="colorPickerButton" class="tool-button">
+            <img src="https://cdn3.iconfinder.com/data/icons/medical-174/100/healthy-15-512.png" alt="Color Picker">
+        </button>
+        <button id="clearCanvas" class="tool-button">
+            <img src="https://cdn4.iconfinder.com/data/icons/ionicons/512/icon-ios7-trash-outline-512.png" alt="Clear Canvas">
+        </button>
+        <input type="color" id="colorPicker" class="color-picker">
+    </div>
+
+    <canvas id="drawingCanvas" width="800" height="600"></canvas>
+
+    <!-- Modal for pen radius -->
+    <div id="modal" class="modal">
+        <label for="radiusSlider">Pen Radius: <span id="radiusValue">5</span></label>
+        <input type="range" id="radiusSlider" min="1" max="50" value="5">
+    </div>
+    <div id="overlay" class="overlay"></div>
+
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const penBtn = document.getElementById('pen');
+        const eraserBtn = document.getElementById('eraser');
+        const radiusBtn = document.getElementById('penRadius');
+        const colorPickerButton = document.getElementById('colorPickerButton');
+        const colorPicker = document.getElementById('colorPicker');
+        const clearCanvasBtn = document.getElementById('clearCanvas');
+        const modal = document.getElementById('modal');
+        const overlay = document.getElementById('overlay');
+        const radiusSlider = document.getElementById('radiusSlider');
+        const radiusValue = document.getElementById('radiusValue');
+        let tool = 'pen';
+        let penRadius = 5;
+        let penColor = 'black';
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight * 0.9;
+        }
+
+        window.addEventListener('resize', resizeCanvas, false);
+        resizeCanvas();
+
+        let drawing = false;
+
+        function startPosition(e) {
+            drawing = true;
+            draw(e);
+        }
+
+        function endPosition() {
+            drawing = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+            ctx.lineWidth = tool === 'pen' ? penRadius : 10;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = tool === 'pen' ? penColor : 'white';
+
+            ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+        }
+
+        function switchTool(newTool) {
+            tool = newTool;
+            penBtn.classList.remove('active');
+            eraserBtn.classList.remove('active');
+            if (newTool === 'pen') {
+                penBtn.classList.add('active');
+            } else {
+                eraserBtn.classList.add('active');
+            }
+        }
+
+        radiusBtn.addEventListener('click', () => {
+            modal.style.display = 'block';
+            overlay.style.display = 'block';
+        });
+
+        overlay.addEventListener('click', () => {
+            modal.style.display = 'none';
+            overlay.style.display = 'none';
+        });
+
+        radiusSlider.addEventListener('input', (e) => {
+            penRadius = e.target.value;
+            radiusValue.textContent = penRadius;
+        });
+
+        colorPickerButton.addEventListener('click', () => {
+            colorPicker.click();
+        });
+
+        colorPicker.addEventListener('change', (e) => {
+            penColor = e.target.value;
+        });
+
+        clearCanvasBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        penBtn.addEventListener('click', () => switchTool('pen'));
+        eraserBtn.addEventListener('click', () => switchTool('eraser'));
+        canvas.addEventListener('mousedown', startPosition);
+        canvas.addEventListener('mouseup', endPosition);
+        canvas.addEventListener('mousemove', draw);
+    </script>
+</body>
+</html>
